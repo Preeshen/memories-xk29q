@@ -466,9 +466,10 @@ section.page{
   <span class="heart" style="left:90%; font-size:0.95rem; animation-duration:12s; animation-delay:6.5s;">❤️</span>
 </div>
 
+<audio id="bgm" src="song.mp3" loop preload="none"></audio>
 <button class="sound-btn" id="soundBtn" type="button" aria-pressed="false">
   <span class="dot off" id="soundDot"></span>
-  <span id="soundLabel">play our song (placeholder)</span>
+  <span id="soundLabel">play our song</span>
 </button>
 
 <section class="gate" id="gateYesNo">
@@ -783,62 +784,24 @@ section.page{
   }
   frame();
 
-  // Placeholder ambient hum (soft pad) built from oscillators.
-  // Swap this for a real <audio src="your-song.mp3"> once you have one.
-  var audioCtx = null;
-  var nodes = null;
+  var bgm = document.getElementById("bgm");
+  bgm.volume = 0.5;
   var playing = false;
   var btn = document.getElementById("soundBtn");
   var dot = document.getElementById("soundDot");
   var label = document.getElementById("soundLabel");
 
-  function startAmbient(){
-    if(!audioCtx){
-      var AC = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AC();
-    }
-    if(audioCtx.state === "suspended"){ audioCtx.resume(); }
-
-    var master = audioCtx.createGain();
-    master.gain.value = 0.0001;
-    master.connect(audioCtx.destination);
-    master.gain.linearRampToValueAtTime(0.045, audioCtx.currentTime + 1.2);
-
-    var freqs = [196.0, 246.94, 329.63];
-    var oscs = freqs.map(function(f){
-      var o = audioCtx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = f;
-      var g = audioCtx.createGain();
-      g.gain.value = 1/freqs.length;
-      o.connect(g);
-      g.connect(master);
-      o.start();
-      return o;
-    });
-
-    nodes = { master: master, oscs: oscs };
-  }
-
-  function stopAmbient(){
-    if(!nodes) return;
-    var now = audioCtx.currentTime;
-    nodes.master.gain.linearRampToValueAtTime(0.0001, now + 0.6);
-    nodes.oscs.forEach(function(o){ o.stop(now + 0.7); });
-    nodes = null;
-  }
-
   btn.addEventListener("click", function(){
     playing = !playing;
     btn.setAttribute("aria-pressed", String(playing));
     if(playing){
-      startAmbient();
+      bgm.play().catch(function(){});
       dot.classList.remove("off");
-      label.textContent = "pause (placeholder)";
+      label.textContent = "pause our song";
     } else {
-      stopAmbient();
+      bgm.pause();
       dot.classList.add("off");
-      label.textContent = "play our song (placeholder)";
+      label.textContent = "play our song";
     }
   });
 
