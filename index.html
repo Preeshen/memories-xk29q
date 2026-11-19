@@ -186,6 +186,56 @@ canvas#lights{
 }
 .sky-btn{ margin-top:4px; }
 
+.lantern-game{
+  position:absolute;
+  inset:0;
+  z-index:1;
+}
+.flame-source, .lantern-target{
+  position:absolute;
+  font-size:2.3rem;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  user-select:none;
+}
+.flame-source{ left:8%; bottom:10%; }
+.lantern-target{
+  right:10%;
+  top:20%;
+  filter:grayscale(0.7) opacity(0.75) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  transition:filter 0.4s ease;
+}
+.lantern-target.lit{
+  filter:drop-shadow(0 0 22px var(--accent));
+  animation:pulse 1.4s ease-in-out infinite;
+}
+.sparkler{
+  position:absolute;
+  left:50%;
+  bottom:4%;
+  transform:translate(-50%,0);
+  font-size:2.2rem;
+  filter:grayscale(1) opacity(0.6);
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  z-index:2;
+  transition:filter 0.3s ease;
+}
+.sparkler.lit{
+  filter:drop-shadow(0 0 14px var(--accent));
+  animation:pulse 0.8s ease-in-out infinite;
+}
+.sparkler.dragging{ cursor:grabbing; }
+.game-hint{
+  position:absolute;
+  left:0; right:0;
+  bottom:max(18px, env(safe-area-inset-bottom,0px));
+  text-align:center;
+  font-size:0.86rem;
+  color:var(--muted);
+  pointer-events:none;
+}
+
 section.page{
   min-height:100vh;
   display:flex;
@@ -655,6 +705,12 @@ section.page{
 
   <section class="page" id="p5">
     <div class="sky-layer" id="skyLayer" aria-hidden="true"></div>
+    <div class="lantern-game" id="lanternGame">
+      <div class="flame-source" id="flameSource" aria-hidden="true">🕯️</div>
+      <div class="lantern-target" id="lanternTarget" aria-hidden="true">🏮</div>
+      <div class="sparkler" id="sparkler" role="button" tabindex="0" aria-label="Drag the sparkler to the candle, then to the lantern">🎇</div>
+      <p class="game-hint" id="gameHint">pick up the sparkler and light it from the candle</p>
+    </div>
     <div class="wrap">
       <div class="eyebrow">the sky, for you</div>
       <h2 class="big">Every lantern you've ever watched<br>made a wish for you back.</h2>
@@ -681,7 +737,6 @@ section.page{
         <p style="margin:0;">Somewhere in Thailand or Malaysia there's a lantern festival where hundreds of them actually make it to the sky at once, all together, for about $160 to watch in person. That one's staying on the list until we actually go.</p>
       </div>
       <p class="lead">You deserve a sky full of them, lit just because you exist, not because you earned it.</p>
-      <button class="heart-btn sky-btn" id="skyBtn" type="button">light it for real</button>
       <p class="puzzle-msg" id="skyMsg" aria-live="polite" style="min-height:1.4em;"></p>
     </div>
   </section>
@@ -902,35 +957,103 @@ section.page{
     }
   });
 
-  var skyBtn = $("skyBtn");
-  if(skyBtn){
-    skyBtn.addEventListener("click", function(){
-      var layer = $("skyLayer");
-      var msg = $("skyMsg");
-      skyBtn.disabled = true;
-      msg.textContent = "watch the sky, meechu...";
-      var colors = ["var(--accent)", "var(--accent-2)"];
-      var count = reduced ? 10 : 36;
-      for(var i=0;i<count;i++){
-        (function(i){
-          var el = document.createElement("div");
-          el.className = "sky-lantern";
-          el.style.left = (2 + Math.random()*96) + "%";
-          el.style.background = colors[i % 2];
-          el.style.boxShadow = "0 0 18px 6px " + (i % 2 === 0 ? "rgba(255,177,122,0.75)" : "rgba(217,155,208,0.75)");
-          var duration = reduced ? 0.01 : (6 + Math.random()*5);
-          var delay = reduced ? 0 : Math.random()*2.2;
-          el.style.animationDuration = duration + "s";
-          el.style.animationDelay = delay + "s";
-          layer.appendChild(el);
-          setTimeout(function(){ el.remove(); }, (duration + delay) * 1000 + 300);
-        })(i);
-      }
-      setTimeout(function(){
-        msg.textContent = "there, Leethu. that's the sky I meant to give you.";
-      }, reduced ? 300 : 2200);
-    });
+  function lightTheSky(){
+    var layer = $("skyLayer");
+    var msg = $("skyMsg");
+    msg.textContent = "watch the sky, meechu...";
+    var colors = ["var(--accent)", "var(--accent-2)"];
+    var count = reduced ? 10 : 36;
+    for(var i=0;i<count;i++){
+      (function(i){
+        var el = document.createElement("div");
+        el.className = "sky-lantern";
+        el.style.left = (2 + Math.random()*96) + "%";
+        el.style.background = colors[i % 2];
+        el.style.boxShadow = "0 0 18px 6px " + (i % 2 === 0 ? "rgba(255,177,122,0.75)" : "rgba(217,155,208,0.75)");
+        var duration = reduced ? 0.01 : (6 + Math.random()*5);
+        var delay = reduced ? 0 : Math.random()*2.2;
+        el.style.animationDuration = duration + "s";
+        el.style.animationDelay = delay + "s";
+        layer.appendChild(el);
+        setTimeout(function(){ el.remove(); }, (duration + delay) * 1000 + 300);
+      })(i);
+    }
+    setTimeout(function(){
+      msg.textContent = "there, Leethu. that's the sky I meant to give you.";
+    }, reduced ? 300 : 2200);
   }
+
+  (function setupLanternGame(){
+    var sparkler = $("sparkler");
+    var flame = $("flameSource");
+    var target = $("lanternTarget");
+    var hint = $("gameHint");
+    var game = $("lanternGame");
+    if(!sparkler || !flame || !target) return;
+
+    var dragging = false;
+    var lit = false;
+    var done = false;
+
+    function centerOf(el){
+      var r = el.getBoundingClientRect();
+      return { x: r.left + r.width/2, y: r.top + r.height/2 };
+    }
+    function dist(a, b){
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function moveSparklerTo(clientX, clientY){
+      var gr = game.getBoundingClientRect();
+      var x = Math.max(gr.left, Math.min(clientX, gr.right));
+      var y = Math.max(gr.top, Math.min(clientY, gr.bottom));
+      sparkler.style.left = (x - gr.left) + "px";
+      sparkler.style.bottom = (gr.bottom - y) + "px";
+      sparkler.style.transform = "translate(-50%, 50%)";
+
+      if(!lit && dist(centerOf(sparkler), centerOf(flame)) < 46){
+        lit = true;
+        sparkler.classList.add("lit");
+        hint.textContent = "lit. now carry it over to the lantern";
+      }
+      if(lit && !done && dist(centerOf(sparkler), centerOf(target)) < 50){
+        done = true;
+        target.classList.add("lit");
+        hint.textContent = "";
+        lightTheSky();
+      }
+    }
+
+    sparkler.addEventListener("pointerdown", function(e){
+      if(done) return;
+      dragging = true;
+      sparkler.classList.add("dragging");
+      try{ sparkler.setPointerCapture(e.pointerId); }catch(err){}
+      moveSparklerTo(e.clientX, e.clientY);
+    });
+    sparkler.addEventListener("pointermove", function(e){
+      if(!dragging) return;
+      moveSparklerTo(e.clientX, e.clientY);
+    });
+    ["pointerup","pointercancel"].forEach(function(evt){
+      sparkler.addEventListener(evt, function(){
+        dragging = false;
+        sparkler.classList.remove("dragging");
+      });
+    });
+    sparkler.addEventListener("keydown", function(e){
+      if(done) return;
+      var step = 18;
+      var gr = game.getBoundingClientRect();
+      var cur = centerOf(sparkler);
+      if(e.key === "ArrowLeft") moveSparklerTo(cur.x - step, cur.y);
+      else if(e.key === "ArrowRight") moveSparklerTo(cur.x + step, cur.y);
+      else if(e.key === "ArrowUp") moveSparklerTo(cur.x, cur.y - step);
+      else if(e.key === "ArrowDown") moveSparklerTo(cur.x, cur.y + step);
+      else return;
+      e.preventDefault();
+    });
+  })();
 
   document.getElementById("lightBtn").addEventListener("click", function(){
     var note = document.getElementById("closingNote");
