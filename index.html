@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>For Leethu</title>
+<title>For Lithu</title>
 <style>
 /*
   Layout: a vertical scroll-snap story, one warm memory per screen,
@@ -191,21 +191,34 @@ canvas#lights{
   inset:0;
   z-index:1;
 }
-.flame-source, .lantern-target{
+.flame-source{
   position:absolute;
   font-size:2.3rem;
   filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3));
   user-select:none;
+  left:8%; bottom:10%;
 }
-.flame-source{ left:8%; bottom:10%; }
 .lantern-target{
-  right:10%;
-  top:20%;
+  position:absolute;
+  right:6%;
+  top:14%;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  user-select:none;
+}
+.lantern-target span{
+  font-size:1.9rem;
   filter:grayscale(0.7) opacity(0.75) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
   transition:filter 0.4s ease;
 }
-.lantern-target.lit{
-  filter:drop-shadow(0 0 22px var(--accent));
+.lantern-target span:nth-child(1){ transform:translateY(6px); }
+.lantern-target span:nth-child(2){ transform:translateY(-6px); font-size:2.2rem; }
+.lantern-target span:nth-child(3){ transform:translateY(-16px); font-size:2.4rem; }
+.lantern-target span:nth-child(4){ transform:translateY(-4px); font-size:2.2rem; }
+.lantern-target span:nth-child(5){ transform:translateY(8px); }
+.lantern-target.lit span{
+  filter:drop-shadow(0 0 20px var(--accent));
   animation:pulse 1.4s ease-in-out infinite;
 }
 .sparkler{
@@ -697,8 +710,8 @@ section.page{
   <section class="page" id="p1">
     <div class="wrap">
       <div class="eyebrow">for someone very specific</div>
-      <h1 class="big">Hi, Leethu.</h1>
-      <p class="lead">Yes, all six letters, the way you like it spelled out. Before you scroll any further&nbsp;— take a breath. This one's just for you, no deadlines, no checklist, nothing to fix.</p>
+      <h1 class="big">Hi, Lithu.</h1>
+      <p class="lead">Yes, all five letters, the way you like it spelled out. Before you scroll any further&nbsp;— take a breath. This one's just for you, no deadlines, no checklist, nothing to fix.</p>
       <div class="scroll-hint">keep scrolling, meechu ↓</div>
     </div>
   </section>
@@ -707,10 +720,9 @@ section.page{
     <div class="wrap">
       <div class="eyebrow">a quick roll call</div>
       <h2 class="big">Your many names</h2>
-      <div class="letters" aria-label="L E E T H U">
+      <div class="letters" aria-label="L I T H U">
         <div class="letter-tile">L</div>
-        <div class="letter-tile">E</div>
-        <div class="letter-tile">E</div>
+        <div class="letter-tile">I</div>
         <div class="letter-tile">T</div>
         <div class="letter-tile">H</div>
         <div class="letter-tile">U</div>
@@ -720,7 +732,7 @@ section.page{
         <span class="pill">Meechu</span>
         <span class="pill">Rithvika (on official documents only)</span>
       </div>
-      <p class="lead">Pronounced "Lithu," but I say "Leethu." I use both depending on my mood, and you just have to live with it. I have more nicknames for you than you have patience for, and I'm not sorry about it.</p>
+      <p class="lead">I have more nicknames for you than you have patience for, and I'm not sorry about it.</p>
     </div>
   </section>
 
@@ -758,7 +770,7 @@ section.page{
     <div class="sky-layer" id="skyLayer" aria-hidden="true"></div>
     <div class="lantern-game" id="lanternGame">
       <div class="flame-source" id="flameSource" aria-hidden="true">🕯️</div>
-      <div class="lantern-target" id="lanternTarget" aria-hidden="true">🏮</div>
+      <div class="lantern-target" id="lanternTarget" aria-hidden="true"><span>🏮</span><span>🏮</span><span>🏮</span><span>🏮</span><span>🏮</span></div>
       <div class="sparkler" id="sparkler" role="button" tabindex="0" aria-label="Drag the sparkler to the candle, then to the lantern">🎇</div>
       <p class="game-hint" id="gameHint">pick up the sparkler and light it from the candle</p>
     </div>
@@ -844,7 +856,7 @@ section.page{
           <div class="reveal-lines" id="revealLines">
             <span style="animation-delay:0.1s">Lit.</span>
             <span style="animation-delay:0.9s">That one's yours.</span>
-            <span style="animation-delay:1.7s">Made just because you exist, Leethu.</span>
+            <span style="animation-delay:1.7s">Made just because you exist, Lithu.</span>
             <span style="animation-delay:2.5s">Now come here. This one's a hug, not a lantern.</span>
           </div>
         </div>
@@ -861,7 +873,7 @@ section.page{
   <div class="finale-content">
     <span class="finale-countdown" id="finaleCountdown"></span>
     <div class="finale-msg" id="finaleMsg" hidden>
-      <p class="finale-line script">I love you, Leethu.</p>
+      <p class="finale-line script">I love you, Lithu.</p>
       <button class="btn-secondary" id="finaleCloseBtn" type="button">back to the letter</button>
     </div>
   </div>
@@ -872,6 +884,24 @@ section.page{
   "use strict";
 
   function $(id){ return document.getElementById(id); }
+
+  function speakKoreanIntro(callback){
+    var done = false;
+    function finish(){ if(!done){ done = true; callback(); } }
+    try{
+      if("speechSynthesis" in window){
+        var utter = new SpeechSynthesisUtterance("자기야, 준비됐어? 가자. 천천히 읽고 즐겨봐, 베이비.");
+        utter.lang = "ko-KR";
+        utter.rate = 0.95;
+        utter.onend = finish;
+        utter.onerror = finish;
+        window.speechSynthesis.speak(utter);
+        setTimeout(finish, 6000);
+      } else {
+        setTimeout(finish, 1200);
+      }
+    }catch(e){ setTimeout(finish, 1200); }
+  }
 
   function showGate(id){
     ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){
@@ -903,13 +933,15 @@ section.page{
       msg.style.color = "var(--accent)";
       msg.textContent = "that's the one.";
       try{ localStorage.setItem("leethu_unlocked", "1"); }catch(e){}
-      startBgm();
-      $("soundBtn").classList.add("nudge");
       setTimeout(function(){
-        ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
-        var story = $("story");
-        story.hidden = false;
-        story.scrollIntoView({behavior:"smooth"});
+        speakKoreanIntro(function(){
+          ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
+          var story = $("story");
+          story.hidden = false;
+          story.scrollIntoView({behavior:"smooth"});
+          startBgm();
+          $("soundBtn").classList.add("nudge");
+        });
       }, 500);
     } else {
       msg.style.color = "var(--accent-2)";
@@ -1042,7 +1074,7 @@ section.page{
       })(i);
     }
     setTimeout(function(){
-      msg.textContent = "there, Leethu. that's the sky I meant to give you.";
+      msg.textContent = "there, Lithu. that's the sky I meant to give you.";
     }, reduced ? 300 : 2200);
   }
 
