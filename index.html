@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>For Leethu</title>
+<style>
+/*
+  Layout: a vertical scroll-snap story, one warm memory per screen,
+  floating over a fixed canvas of slow drifting lights (her favourite thing).
+*/
+:root{
+  --bg:#191022;
+  --bg-2:#241730;
+  --fg:#f7ecec;
+  --muted:#cdb9c9;
+  --accent:#ffb17a;
+  --accent-2:#d99bd0;
+  --card:#2a1b38;
+  --line:rgba(247,236,236,0.14);
+  color-scheme:dark;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#fbf3e9;
+    --bg-2:#f5e4d8;
+    --fg:#2c1c2e;
+    --muted:#7a5c6d;
+    --accent:#d97a3f;
+    --accent-2:#a35b97;
+    --card:#fffaf4;
+    --line:rgba(44,28,46,0.12);
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#fbf3e9;
+  --bg-2:#f5e4d8;
+  --fg:#2c1c2e;
+  --muted:#7a5c6d;
+  --accent:#d97a3f;
+  --accent-2:#a35b97;
+  --card:#fffaf4;
+  --line:rgba(44,28,46,0.12);
+  color-scheme:light;
+}
+
+*{box-sizing:border-box;}
+html,body{background:var(--bg);margin:0;padding:0;}
+img{max-width:100%;}
+[hidden]{display:none!important;}
+body{
+  color:var(--fg);
+  font-family:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  overflow-x:hidden;
+}
+
+h1,h2,h3,.display{
+  font-family:"Fraunces","Georgia",serif;
+  font-weight:600;
+  text-wrap:balance;
+}
+.script{
+  font-family:"Caveat","Segoe Script",cursive;
+  font-weight:600;
+}
+
+canvas#lights{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+  pointer-events:none;
+}
+
+.scroller{
+  position:relative;
+  z-index:2;
+  scroll-snap-type:y proximity;
+  overscroll-behavior:y contain;
+}
+
+#critters{
+  position:fixed;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  overflow:hidden;
+}
+.critter{
+  position:absolute;
+  bottom:4%;
+  font-size:2rem;
+  animation: walk-across linear infinite, trot ease-in-out infinite;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,0.25));
+}
+.critter.panda{ bottom:9%; font-size:1.7rem; }
+@keyframes walk-across{
+  0%{ transform:translateX(-15vw) scaleX(1); }
+  49%{ transform:translateX(115vw) scaleX(1); }
+  50%{ transform:translateX(115vw) scaleX(-1); }
+  99%{ transform:translateX(-15vw) scaleX(-1); }
+  100%{ transform:translateX(-15vw) scaleX(1); }
+}
+@keyframes trot{
+  0%,100%{ margin-bottom:0; }
+  50%{ margin-bottom:10px; }
+}
+.heart{
+  position:absolute;
+  bottom:-10%;
+  font-size:1.1rem;
+  animation: float-heart linear infinite;
+  opacity:0;
+}
+@keyframes float-heart{
+  0%{ transform:translateY(0) scale(0.8); opacity:0; }
+  10%{ opacity:0.85; }
+  90%{ opacity:0.5; }
+  100%{ transform:translateY(-110vh) scale(1.15); opacity:0; }
+}
+@media (prefers-reduced-motion: reduce){
+  .critter, .heart{ animation:none; display:none; }
+}
+
+section.page{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  scroll-snap-align:start;
+  padding-block:64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  position:relative;
+}
+
+.wrap{
+  max-width:620px;
+  width:100%;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  align-items:center;
+}
+
+.eyebrow{
+  font-size:0.82rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--accent);
+  opacity:0.85;
+}
+
+.big{
+  font-size:clamp(2rem, 7vw, 3.4rem);
+  line-height:1.08;
+  margin:0;
+}
+
+.lead{
+  font-size:clamp(1.05rem, 2.6vw, 1.25rem);
+  color:var(--muted);
+  line-height:1.6;
+  margin:0;
+  max-width:520px;
+}
+
+.pill-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+}
+
+.pill{
+  border:1px solid var(--line);
+  background:var(--card);
+  border-radius:999px;
+  padding:9px 18px;
+  font-size:1.3rem;
+  font-family:"Caveat","Segoe Script",cursive;
+  color:var(--fg);
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:26px 28px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  align-items:flex-start;
+  text-align:left;
+}
+
+.card .label{
+  font-size:0.75rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--accent-2);
+}
+
+.grid-loves{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+  width:100%;
+}
+@media (max-width:480px){
+  .grid-loves{grid-template-columns:1fr;}
+}
+
+.love-card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px 18px;
+  text-align:left;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.love-card .icon{font-size:1.5rem;}
+.love-card .title{font-weight:700;font-size:0.98rem;}
+.love-card .sub{font-size:0.86rem;color:var(--muted);}
+
+.scroll-hint{
+  position:absolute;
+  bottom:max(20px, env(safe-area-inset-bottom,0px));
+  left:0;right:0;
+  display:flex;
+  justify-content:center;
+  opacity:0.6;
+  font-size:0.78rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  animation:bob 2.2s ease-in-out infinite;
+}
+@keyframes bob{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(6px);}
+}
+@media (prefers-reduced-motion:reduce){
+  .scroll-hint{animation:none;}
+}
+
+.sound-btn{
+  position:fixed;
+  top:max(16px, env(safe-area-inset-top,0px));
+  right:max(16px, env(safe-area-inset-right,0px));
+  z-index:5;
+  background:var(--card);
+  border:1px solid var(--line);
+  color:var(--fg);
+  border-radius:999px;
+  padding:10px 16px;
+  font-family:"Nunito",sans-serif;
+  font-size:0.82rem;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+}
+.sound-btn:focus-visible, button:focus-visible, a:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
+.dot.off{background:var(--muted);}
+
+.letters{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.letter-tile{
+  width:54px;height:54px;
+  border-radius:14px;
+  background:var(--card);
+  border:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.5rem;
+  font-weight:800;
+  color:var(--accent);
+}
+
+.heart-btn{
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  color:#1c1020;
+  border:none;
+  border-radius:999px;
+  padding:14px 30px;
+  font-size:1.05rem;
+  font-weight:700;
+  cursor:pointer;
+  font-family:"Nunito",sans-serif;
+}
+.heart-btn:active{transform:scale(0.97);}
+
+.lanterns{
+  position:relative;
+  width:100%;
+  max-width:360px;
+  height:200px;
+  margin:0 auto;
+}
+
+.sig{
+  font-size:clamp(1.6rem,5vw,2.2rem);
+}
+
+.closing-note[hidden]{display:none;}
+
+.gate{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-block:64px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  position:relative;
+  z-index:2;
+}
+.gate[hidden]{display:none;}
+
+.gate-btns{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.btn-secondary{
+  background:transparent;
+  color:var(--fg);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:14px 26px;
+  font-size:1rem;
+  font-weight:700;
+  cursor:pointer;
+  font-family:"Nunito",sans-serif;
+}
+
+.qr-card{
+  background:#fff;
+  border-radius:20px;
+  padding:20px;
+  display:inline-flex;
+}
+.qr-fallback{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:16px 20px;
+  max-width:420px;
+}
+.link-btn{
+  background:none;
+  border:none;
+  color:var(--accent-2);
+  text-decoration:underline;
+  cursor:pointer;
+  font-family:"Nunito",sans-serif;
+  font-size:0.92rem;
+  padding:0;
+}
+
+.puzzle-input{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:center;
+  width:100%;
+}
+.puzzle-input input{
+  flex:1;
+  min-width:180px;
+  max-width:280px;
+  background:var(--card);
+  border:1px solid var(--line);
+  color:var(--fg);
+  border-radius:999px;
+  padding:12px 20px;
+  font-size:1rem;
+  font-family:"Nunito",sans-serif;
+}
+.puzzle-msg{
+  min-height:1.4em;
+  color:var(--accent-2);
+  font-weight:700;
+}
+.shake{animation:shake 0.4s;}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  25%{transform:translateX(-8px);}
+  75%{transform:translateX(8px);}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Caveat:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap">
+</head>
+<body>
+
+<canvas id="lights" aria-hidden="true"></canvas>
+
+<div id="critters" aria-hidden="true">
+  <span class="critter" style="animation-duration:38s, 1.1s; animation-delay:0s, 0s;">🐘</span>
+  <span class="critter panda" style="animation-duration:46s, 0.9s; animation-delay:-18s, 0s;">🐼</span>
+  <span class="heart" style="left:8%; font-size:1rem; animation-duration:11s; animation-delay:0s;">💗</span>
+  <span class="heart" style="left:22%; font-size:0.85rem; animation-duration:14s; animation-delay:3s;">🩷</span>
+  <span class="heart" style="left:40%; font-size:1.2rem; animation-duration:12.5s; animation-delay:1.5s;">❤️</span>
+  <span class="heart" style="left:63%; font-size:0.9rem; animation-duration:13s; animation-delay:5s;">💗</span>
+  <span class="heart" style="left:78%; font-size:1.05rem; animation-duration:15.5s; animation-delay:2.2s;">🩷</span>
+  <span class="heart" style="left:90%; font-size:0.95rem; animation-duration:12s; animation-delay:6.5s;">❤️</span>
+</div>
+
+<button class="sound-btn" id="soundBtn" type="button" aria-pressed="false">
+  <span class="dot off" id="soundDot"></span>
+  <span id="soundLabel">play our song (placeholder)</span>
+</button>
+
+<section class="gate" id="gateYesNo">
+  <div class="wrap">
+    <div class="eyebrow">before anything else</div>
+    <h1 class="big">Do you trust me enough<br>to follow a tiny trail I made for you?</h1>
+    <p class="lead">No pressure. If today isn't the day, that's completely okay.</p>
+    <div class="gate-btns">
+      <button class="heart-btn" id="gateYesBtn" type="button">yes, show me</button>
+      <button class="btn-secondary" id="gateNoBtn" type="button">not right now</button>
+    </div>
+  </div>
+</section>
+
+<section class="gate" id="gateNoResponse" hidden>
+  <div class="wrap">
+    <h2 class="big">That's okay.</h2>
+    <p class="lead">I'll be right here whenever you're ready, no rush, no expiry date on this.</p>
+    <button class="btn-secondary" id="gateRetryBtn" type="button">okay, actually, show me</button>
+  </div>
+</section>
+
+<section class="gate" id="gateQr" hidden>
+  <div class="wrap">
+    <div class="eyebrow">clue one</div>
+    <h2 class="big">Scan this with your phone.</h2>
+    <div class="qr-card" id="qrCanvas"></div>
+    <button class="link-btn" id="qrFallbackBtn" type="button">don't have your phone handy? tap here</button>
+    <div class="qr-fallback" id="qrFallbackText" hidden>
+      <p style="margin:0;">There's a version of your name that only I use, spelled out letter by letter: L-?-?-T-H-U. You'll need it on the next page.</p>
+    </div>
+    <button class="heart-btn" id="qrContinueBtn" type="button">got it, continue</button>
+  </div>
+</section>
+
+<section class="gate" id="gatePuzzle" hidden>
+  <div class="wrap">
+    <div class="eyebrow">the password</div>
+    <h2 class="big">Type the name only I use.</h2>
+    <p class="lead">All six letters, one word, no spaces.</p>
+    <div class="puzzle-input">
+      <input type="text" id="puzzleAnswer" autocomplete="off" aria-label="Type the secret nickname" placeholder="your nickname">
+      <button class="heart-btn" id="puzzleSubmit" type="button">unlock</button>
+    </div>
+    <p class="puzzle-msg" id="puzzleMsg" aria-live="polite"></p>
+  </div>
+</section>
+
+<div class="scroller" id="story" hidden>
+
+  <section class="page" id="p1">
+    <div class="wrap">
+      <div class="eyebrow">for someone very specific</div>
+      <h1 class="big">Hi, Leethu.</h1>
+      <p class="lead">Yes, all six letters, the way you like it spelled out. Before you scroll any further&nbsp;— take a breath. This one's just for you, no deadlines, no checklist, nothing to fix.</p>
+      <div class="scroll-hint">keep scrolling, meechu ↓</div>
+    </div>
+  </section>
+
+  <section class="page" id="p2">
+    <div class="wrap">
+      <div class="eyebrow">a quick roll call</div>
+      <h2 class="big">Your many names</h2>
+      <div class="letters" aria-label="L E E T H U">
+        <div class="letter-tile">L</div>
+        <div class="letter-tile">E</div>
+        <div class="letter-tile">E</div>
+        <div class="letter-tile">T</div>
+        <div class="letter-tile">H</div>
+        <div class="letter-tile">U</div>
+      </div>
+      <div class="pill-row">
+        <span class="pill">Lithu</span>
+        <span class="pill">Meechu</span>
+        <span class="pill">Rithvika (on official documents only)</span>
+      </div>
+      <p class="lead">Pronounced "Lithu," enunciated "Leethu" &mdash; I use both depending on my mood, and you just have to live with it. I have more nicknames for you than you have patience for, and I'm not sorry about it.</p>
+    </div>
+  </section>
+
+  <section class="page" id="p3">
+    <div class="wrap">
+      <div class="eyebrow">exhibit A, your honour</div>
+      <h2 class="big">The scooter was mine.<br>The late nights were theirs.</h2>
+      <div class="card">
+        <span class="label">Witness statement</span>
+        <p style="margin:0;">Somehow every late-night scooter ride became a group outing for you and your three partners-in-crime, and I just happened to be the driver. I'm fairly sure the scooter has filed a formal complaint about seating arrangements.</p>
+      </div>
+      <p class="lead">Still, I'd drive you all around the city a hundred more times if it means that laugh shows up again.</p>
+    </div>
+  </section>
+
+  <section class="page" id="p4">
+    <div class="wrap">
+      <div class="eyebrow">things that are, scientifically, you</div>
+      <h2 class="big">A very accurate list</h2>
+      <div class="grid-loves">
+        <div class="love-card"><span class="icon">☕</span><span class="title">Coffee, obviously</span><span class="sub">Any time, any excuse</span></div>
+        <div class="love-card"><span class="icon">🍜</span><span class="title">New food, new cuisines</span><span class="sub">You've turned me into an explorer too</span></div>
+        <div class="love-card"><span class="icon">📺</span><span class="title">Early Springs, on repeat</span><span class="sub">And every k-drama before it</span></div>
+        <div class="love-card"><span class="icon">✨</span><span class="title">Fairy lights &amp; water droplet lights</span><span class="sub">Your whole aesthetic, honestly</span></div>
+      </div>
+      <p class="lead">Small things, you call them. I call them the whole reason a room feels warmer when you're in it.</p>
+    </div>
+  </section>
+
+  <section class="page" id="p5">
+    <div class="wrap">
+      <div class="eyebrow">the sky, for you</div>
+      <h2 class="big">Every lantern you've ever watched<br>made a wish for you back.</h2>
+      <svg class="lanterns" viewBox="0 0 360 200" role="img" aria-label="Sky lanterns drifting upward">
+        <defs>
+          <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g id="lanternGroup">
+          <g transform="translate(60,150)"><circle r="20" fill="url(#glow)"/><rect x="-10" y="-14" width="20" height="26" rx="6" fill="var(--accent)" opacity="0.85"/></g>
+          <g transform="translate(160,90)"><circle r="24" fill="url(#glow)"/><rect x="-11" y="-16" width="22" height="30" rx="7" fill="var(--accent-2)" opacity="0.85"/></g>
+          <g transform="translate(260,130)"><circle r="18" fill="url(#glow)"/><rect x="-9" y="-13" width="18" height="24" rx="6" fill="var(--accent)" opacity="0.8"/></g>
+          <g transform="translate(310,60)"><circle r="16" fill="url(#glow)"/><rect x="-8" y="-11" width="16" height="22" rx="5" fill="var(--accent-2)" opacity="0.8"/></g>
+        </g>
+      </svg>
+      <p class="lead">You deserve a sky full of them, lit just because you exist, not because you earned it.</p>
+    </div>
+  </section>
+
+  <section class="page" id="p6">
+    <div class="wrap">
+      <div class="eyebrow">just for a second, be still</div>
+      <h2 class="big">This year has been a lot.<br>You're allowed to put it down.</h2>
+      <p class="lead">You've been carrying so much lately that even the things you love have started to feel like one more task. That's not you losing yourself. That's just exhaustion talking.</p>
+      <div class="card">
+        <span class="label">Permission slip</span>
+        <p style="margin:0;">You do not have to be okay, productive, or motivated today. Rest is not something you need to earn first.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="p7">
+    <div class="wrap">
+      <div class="eyebrow">from me, no excuses</div>
+      <h2 class="big">I'm sorry for the hard parts<br>I've added to your year.</h2>
+      <p class="lead">I know some of the weight you're carrying has my name on it. I'm not writing this to be forgiven on the spot&nbsp;— just so you know I see it, I'm not looking away from it, and I'm not going anywhere while we figure it out.</p>
+    </div>
+  </section>
+
+  <section class="page" id="p8">
+    <div class="wrap">
+      <div class="eyebrow">promises, not just words</div>
+      <h2 class="big">What I owe you, and I intend to pay it</h2>
+      <div class="card">
+        <span class="label">Soon, not someday</span>
+        <p style="margin:0;">That mud pottery session you've been wanting forever &mdash; let's actually book it. Hands in clay, no phones, just us making something lopsided and ours.</p>
+      </div>
+      <div class="card">
+        <span class="label">Not forgotten</span>
+        <p style="margin:0;">The shiny stone-and-diamond kind of jewellery you love isn't off the table &mdash; it's just waiting on a better season. I haven't stopped wanting to give it to you.</p>
+      </div>
+      <div class="card">
+        <span class="label">Standing policy</span>
+        <p style="margin:0;">Whatever is on your plate, you don't carry it solo anymore. I'm your emotional support, on the good days and the heavy ones.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="p9">
+    <div class="wrap">
+      <div class="eyebrow">one small spark</div>
+      <h2 class="big">Go find the thing that still makes you, you.</h2>
+      <p class="lead">The girl who chases water droplet lights, tries weird new food, cries happy-tears over period dramas, and makes memories out of nothing &mdash; she's still in there. She's just tired. Let her rest, then let her out again.</p>
+      <button class="heart-btn" id="lightBtn" type="button">light one for yourself</button>
+      <p class="closing-note" id="closingNote" hidden>Lit. That one's yours &mdash; made just because you exist.</p>
+      <p class="sig script">love, always &mdash; your scooter driver</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function $(id){ return document.getElementById(id); }
+
+  function showGate(id){
+    ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){
+      $(g).hidden = (g !== id);
+    });
+  }
+
+  $("gateYesBtn").addEventListener("click", function(){
+    showGate("gateQr");
+    try{
+      new QRCode($("qrCanvas"), {
+        text: "Clue: there's a name only I use for you — spelled L _ _ T H U. You'll need it next.",
+        width: 180, height: 180,
+        colorDark: "#2c1c2e", colorLight: "#ffffff"
+      });
+    }catch(e){ $("qrFallbackText").hidden = false; }
+  });
+
+  $("gateNoBtn").addEventListener("click", function(){ showGate("gateNoResponse"); });
+  $("gateRetryBtn").addEventListener("click", function(){ showGate("gateYesNo"); });
+
+  $("qrFallbackBtn").addEventListener("click", function(){
+    $("qrFallbackText").hidden = !$("qrFallbackText").hidden;
+  });
+
+  $("qrContinueBtn").addEventListener("click", function(){ showGate("gatePuzzle"); });
+
+  function tryUnlock(){
+    var val = ($("puzzleAnswer").value || "").trim().toLowerCase();
+    var msg = $("puzzleMsg");
+    if(val === "leethu"){
+      msg.style.color = "var(--accent)";
+      msg.textContent = "that's the one.";
+      try{ localStorage.setItem("leethu_unlocked", "1"); }catch(e){}
+      setTimeout(function(){
+        ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
+        var story = $("story");
+        story.hidden = false;
+        story.scrollIntoView({behavior:"smooth"});
+      }, 500);
+    } else {
+      msg.style.color = "var(--accent-2)";
+      msg.textContent = "not quite — try again?";
+      var card = $("puzzleAnswer");
+      card.classList.remove("shake");
+      void card.offsetWidth;
+      card.classList.add("shake");
+    }
+  }
+  $("puzzleSubmit").addEventListener("click", tryUnlock);
+  $("puzzleAnswer").addEventListener("keydown", function(e){
+    if(e.key === "Enter") tryUnlock();
+  });
+
+  try{
+    if(localStorage.getItem("leethu_unlocked") === "1"){
+      ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
+      $("story").hidden = false;
+    }
+  }catch(e){}
+
+  var canvas = document.getElementById("lights");
+  var ctx = canvas.getContext("2d");
+  var dots = [];
+  var count = 60;
+  var w, h;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  for(var i=0;i<count;i++){
+    dots.push({
+      x: Math.random()*w,
+      y: Math.random()*h,
+      r: 0.6 + Math.random()*2.2,
+      speed: 0.08 + Math.random()*0.22,
+      phase: Math.random()*Math.PI*2,
+      hueWarm: Math.random() > 0.5
+    });
+  }
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var t = 0;
+
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    t += reduced ? 0 : 0.016;
+    for(var i=0;i<dots.length;i++){
+      var d = dots[i];
+      if(!reduced){
+        d.y -= d.speed;
+        if(d.y < -10){ d.y = h + 10; d.x = Math.random()*w; }
+      }
+      var flicker = 0.45 + 0.4*Math.sin(t*1.5 + d.phase);
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+      ctx.fillStyle = d.hueWarm
+        ? "rgba(255,177,122," + flicker + ")"
+        : "rgba(217,155,208," + flicker + ")";
+      ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  // Placeholder ambient hum (soft pad) built from oscillators.
+  // Swap this for a real <audio src="your-song.mp3"> once you have one.
+  var audioCtx = null;
+  var nodes = null;
+  var playing = false;
+  var btn = document.getElementById("soundBtn");
+  var dot = document.getElementById("soundDot");
+  var label = document.getElementById("soundLabel");
+
+  function startAmbient(){
+    if(!audioCtx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+    }
+    if(audioCtx.state === "suspended"){ audioCtx.resume(); }
+
+    var master = audioCtx.createGain();
+    master.gain.value = 0.0001;
+    master.connect(audioCtx.destination);
+    master.gain.linearRampToValueAtTime(0.045, audioCtx.currentTime + 1.2);
+
+    var freqs = [196.0, 246.94, 329.63];
+    var oscs = freqs.map(function(f){
+      var o = audioCtx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+      var g = audioCtx.createGain();
+      g.gain.value = 1/freqs.length;
+      o.connect(g);
+      g.connect(master);
+      o.start();
+      return o;
+    });
+
+    nodes = { master: master, oscs: oscs };
+  }
+
+  function stopAmbient(){
+    if(!nodes) return;
+    var now = audioCtx.currentTime;
+    nodes.master.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+    nodes.oscs.forEach(function(o){ o.stop(now + 0.7); });
+    nodes = null;
+  }
+
+  btn.addEventListener("click", function(){
+    playing = !playing;
+    btn.setAttribute("aria-pressed", String(playing));
+    if(playing){
+      startAmbient();
+      dot.classList.remove("off");
+      label.textContent = "pause (placeholder)";
+    } else {
+      stopAmbient();
+      dot.classList.add("off");
+      label.textContent = "play our song (placeholder)";
+    }
+  });
+
+  document.getElementById("lightBtn").addEventListener("click", function(){
+    var note = document.getElementById("closingNote");
+    note.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>
