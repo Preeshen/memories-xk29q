@@ -236,6 +236,57 @@ canvas#lights{
   pointer-events:none;
 }
 
+.finale{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  background:#0a0712;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.finale[hidden]{ display:none; }
+#fireworksCanvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+.finale-content{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+  padding:0 16px;
+  text-align:center;
+}
+.finale-countdown{
+  font-family:"Fraunces","Georgia",serif;
+  font-size:clamp(4rem, 20vw, 7rem);
+  color:#fff;
+  font-weight:600;
+}
+.finale-msg{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+.finale-line{
+  font-size:clamp(2.2rem, 8vw, 3.4rem);
+  color:#fff;
+  animation: riseIn 1s ease forwards;
+}
+.finale-msg .btn-secondary{
+  border-color:rgba(255,255,255,0.3);
+  color:#fff;
+}
+@media (prefers-reduced-motion: reduce){
+  .finale-line{ animation:none; }
+}
+
 section.page{
   min-height:100vh;
   display:flex;
@@ -799,9 +850,21 @@ section.page{
         </div>
       </div>
       <p class="sig script">love, always, your scooter driver</p>
+      <button class="heart-btn" id="fireworksBtn" type="button">one more thing</button>
     </div>
   </section>
 
+</div>
+
+<div class="finale" id="finaleOverlay" hidden>
+  <canvas id="fireworksCanvas"></canvas>
+  <div class="finale-content">
+    <span class="finale-countdown" id="finaleCountdown"></span>
+    <div class="finale-msg" id="finaleMsg" hidden>
+      <p class="finale-line script">I love you, Leethu.</p>
+      <button class="btn-secondary" id="finaleCloseBtn" type="button">back to the letter</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1052,6 +1115,152 @@ section.page{
       else if(e.key === "ArrowDown") moveSparklerTo(cur.x, cur.y + step);
       else return;
       e.preventDefault();
+    });
+  })();
+
+  (function setupFinale(){
+    var btn = $("fireworksBtn");
+    if(!btn) return;
+    var overlay = $("finaleOverlay");
+    var canvas = $("fireworksCanvas");
+    var fctx = canvas.getContext("2d");
+    var countdownEl = $("finaleCountdown");
+    var finaleMsg = $("finaleMsg");
+    var fwCtx = null;
+
+    function boom(time, big){
+      if(!fwCtx) return;
+      var dur = big ? 1.1 : 0.7;
+      var bufferSize = Math.floor(fwCtx.sampleRate * dur);
+      var buffer = fwCtx.createBuffer(1, bufferSize, fwCtx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for(var i=0;i<bufferSize;i++){
+        data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 2);
+      }
+      var noise = fwCtx.createBufferSource();
+      noise.buffer = buffer;
+      var filter = fwCtx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = big ? 1300 : 1900;
+      var gain = fwCtx.createGain();
+      gain.gain.value = big ? 0.55 : 0.35;
+      noise.connect(filter); filter.connect(gain); gain.connect(fwCtx.destination);
+      noise.start(time);
+
+      var osc = fwCtx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(big ? 95 : 70, time);
+      osc.frequency.exponentialRampToValueAtTime(28, time + 0.4);
+      var oGain = fwCtx.createGain();
+      oGain.gain.setValueAtTime(big ? 0.6 : 0.4, time);
+      oGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+      osc.connect(oGain); oGain.connect(fwCtx.destination);
+      osc.start(time); osc.stop(time + 0.5);
+    }
+
+    var particles = [];
+    var w, h;
+    function resizeCanvas(){
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    var palette = ["255,177,122", "217,155,208", "255,214,153", "255,140,160", "200,170,255"];
+
+    function burst(x, y, big){
+      var n = big ? 90 : 55;
+      var hue = palette[Math.floor(Math.random()*palette.length)];
+      for(var i=0;i<n;i++){
+        var angle = (Math.PI*2*i)/n + Math.random()*0.2;
+        var speed = (big ? 3.2 : 2.2) + Math.random()*2;
+        particles.push({
+          x: x, y: y,
+          vx: Math.cos(angle)*speed,
+          vy: Math.sin(angle)*speed,
+          life: 1,
+          decay: 0.008 + Math.random()*0.01,
+          color: hue,
+          size: big ? (1.8 + Math.random()*1.6) : (1.3 + Math.random()*1.2)
+        });
+      }
+    }
+
+    function doubleShot(x, topY){
+      burst(x, topY + 90, false);
+      if(fwCtx) boom(fwCtx.currentTime, false);
+      setTimeout(function(){
+        burst(x, topY, true);
+        if(fwCtx) boom(fwCtx.currentTime, true);
+      }, 260);
+    }
+
+    var rafId = null;
+    function renderLoop(){
+      fctx.fillStyle = "rgba(10,7,18,0.22)";
+      fctx.fillRect(0,0,w,h);
+      for(var i=particles.length-1;i>=0;i--){
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.045;
+        p.life -= p.decay;
+        if(p.life <= 0){ particles.splice(i,1); continue; }
+        fctx.beginPath();
+        fctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        fctx.fillStyle = "rgba(" + p.color + "," + Math.max(p.life,0) + ")";
+        fctx.fill();
+      }
+      rafId = requestAnimationFrame(renderLoop);
+    }
+
+    btn.addEventListener("click", function(){
+      try{ bgm.pause(); }catch(e){}
+      playing = false;
+      dot.classList.add("off");
+      label.textContent = "play our song";
+
+      overlay.hidden = false;
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+      fctx.fillStyle = "#0a0712";
+      fctx.fillRect(0,0,w,h);
+
+      if(!fwCtx){
+        try{
+          var AC = window.AudioContext || window.webkitAudioContext;
+          fwCtx = new AC();
+        }catch(e){ fwCtx = null; }
+      }
+
+      var n = 5;
+      countdownEl.textContent = n;
+      var tick = setInterval(function(){
+        n -= 1;
+        if(n > 0){
+          countdownEl.textContent = n;
+        } else {
+          clearInterval(tick);
+          countdownEl.hidden = true;
+          renderLoop();
+          var positions = [0.2, 0.5, 0.8, 0.35, 0.65, 0.5];
+          positions.forEach(function(px, idx){
+            setTimeout(function(){
+              doubleShot(w*px, h*0.3 + Math.random()*h*0.12);
+            }, idx * 1500);
+          });
+          setTimeout(function(){
+            finaleMsg.hidden = false;
+          }, positions.length * 1500 + 2200);
+        }
+      }, 1000);
+    });
+
+    $("finaleCloseBtn").addEventListener("click", function(){
+      if(rafId) cancelAnimationFrame(rafId);
+      particles = [];
+      overlay.hidden = true;
+      finaleMsg.hidden = true;
+      countdownEl.hidden = false;
     });
   })();
 
