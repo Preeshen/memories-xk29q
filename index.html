@@ -888,19 +888,45 @@ section.page{
   function speakKoreanIntro(callback){
     var done = false;
     function finish(){ if(!done){ done = true; callback(); } }
-    try{
-      if("speechSynthesis" in window){
+
+    if(!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)){
+      setTimeout(finish, 900);
+      return;
+    }
+
+    function doSpeak(){
+      try{
+        window.speechSynthesis.cancel();
         var utter = new SpeechSynthesisUtterance("자기야, 준비됐어? 가자. 천천히 읽고 즐겨봐, 베이비.");
+        var voices = window.speechSynthesis.getVoices();
+        var koVoice = null;
+        for(var i=0;i<voices.length;i++){
+          if(voices[i].lang && voices[i].lang.toLowerCase().indexOf("ko") === 0){ koVoice = voices[i]; break; }
+        }
+        if(koVoice) utter.voice = koVoice;
         utter.lang = "ko-KR";
         utter.rate = 0.95;
         utter.onend = finish;
         utter.onerror = finish;
         window.speechSynthesis.speak(utter);
-        setTimeout(finish, 6000);
+        setTimeout(finish, 7000);
+      }catch(e){ finish(); }
+    }
+
+    try{
+      var existing = window.speechSynthesis.getVoices();
+      if(existing && existing.length){
+        doSpeak();
       } else {
-        setTimeout(finish, 1200);
+        var primed = false;
+        window.speechSynthesis.onvoiceschanged = function(){
+          if(primed) return;
+          primed = true;
+          doSpeak();
+        };
+        setTimeout(function(){ if(!primed){ primed = true; doSpeak(); } }, 350);
       }
-    }catch(e){ setTimeout(finish, 1200); }
+    }catch(e){ setTimeout(finish, 900); }
   }
 
   function showGate(id){
@@ -933,16 +959,14 @@ section.page{
       msg.style.color = "var(--accent)";
       msg.textContent = "that's the one.";
       try{ localStorage.setItem("leethu_unlocked", "1"); }catch(e){}
-      setTimeout(function(){
-        speakKoreanIntro(function(){
-          ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
-          var story = $("story");
-          story.hidden = false;
-          story.scrollIntoView({behavior:"smooth"});
-          startBgm();
-          $("soundBtn").classList.add("nudge");
-        });
-      }, 500);
+      speakKoreanIntro(function(){
+        ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
+        var story = $("story");
+        story.hidden = false;
+        story.scrollIntoView({behavior:"smooth"});
+        startBgm();
+        $("soundBtn").classList.add("nudge");
+      });
     } else {
       msg.style.color = "var(--accent-2)";
       msg.textContent = "not quite — try again?";
