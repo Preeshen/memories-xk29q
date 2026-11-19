@@ -406,6 +406,47 @@ section.page{
   25%{transform:translateX(-8px);}
   75%{transform:translateX(8px);}
 }
+
+.hug-wrap{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+}
+.hug-emoji{
+  font-size:3.2rem;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.reveal-lines{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.reveal-lines span{
+  display:block;
+  opacity:0;
+  transform:translateY(10px);
+  animation: riseIn 0.7s ease forwards;
+  font-family:"Fraunces","Georgia",serif;
+  font-size:clamp(1.1rem, 3vw, 1.5rem);
+}
+@keyframes riseIn{ to{ opacity:1; transform:translateY(0); } }
+@keyframes pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.15); } }
+.burst-heart{
+  position:absolute;
+  left:50%; top:50%;
+  font-size:1.3rem;
+  opacity:1;
+  pointer-events:none;
+  animation: burstOut 1.2s ease-out forwards;
+}
+@keyframes burstOut{ to{ transform:translate(var(--tx), var(--ty)) scale(1.4); opacity:0; } }
+@media (prefers-reduced-motion: reduce){
+  .hug-emoji{ animation:none; }
+  .reveal-lines span{ animation:none; opacity:1; transform:none; }
+}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Caveat:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap">
@@ -454,7 +495,7 @@ section.page{
   <div class="wrap">
     <div class="eyebrow">clue one</div>
     <h2 class="big">Scan this with your phone.</h2>
-    <div class="qr-card" id="qrCanvas"></div>
+    <div class="qr-card"><img id="qrImg" width="180" height="180" alt="QR code with a clue" style="display:block;"></div>
     <button class="link-btn" id="qrFallbackBtn" type="button">don't have your phone handy? tap here</button>
     <div class="qr-fallback" id="qrFallbackText" hidden>
       <p style="margin:0;">There's a version of your name that only I use, spelled out letter by letter: L-?-?-T-H-U. You'll need it on the next page.</p>
@@ -510,13 +551,17 @@ section.page{
 
   <section class="page" id="p3">
     <div class="wrap">
-      <div class="eyebrow">exhibit A, your honour</div>
-      <h2 class="big">The scooter was mine.<br>The late nights were theirs.</h2>
+      <div class="eyebrow">before and after</div>
+      <h2 class="big">The scooter rides never stopped.<br>The passenger seat just got crowded differently.</h2>
       <div class="card">
-        <span class="label">Witness statement</span>
-        <p style="margin:0;">Somehow every late-night scooter ride became a group outing for you and your three partners-in-crime, and I just happened to be the driver. I'm fairly sure the scooter has filed a formal complaint about seating arrangements.</p>
+        <span class="label">Back then</span>
+        <p style="margin:0;">College days, big friend group, you and your girls piling onto a scooter for one more late-night outing. I was somewhere in that same chaos too, taking my turn riding you all around &mdash; just one friend among many, no idea yet what you'd become to me.</p>
       </div>
-      <p class="lead">Still, I'd drive you all around the city a hundred more times if it means that laugh shows up again.</p>
+      <div class="card">
+        <span class="label">Then it was just us</span>
+        <p style="margin:0;">When we started dating, I didn't even have a scooter yet. Every single place we went in those early days, we went on yours. Then I finally bought one &mdash; sporty, impractical, and apparently far too small for two people, which you have never once let me forget.</p>
+      </div>
+      <p class="lead">I know you miss those old rides with your girls, the ones where it was just laughter and no destination. I can't give you that exact version back. But I'm still here, still terrible scooter and all, for every ride after.</p>
     </div>
   </section>
 
@@ -552,6 +597,14 @@ section.page{
           <g transform="translate(310,60)"><circle r="16" fill="url(#glow)"/><rect x="-8" y="-11" width="16" height="22" rx="5" fill="var(--accent-2)" opacity="0.8"/></g>
         </g>
       </svg>
+      <div class="card">
+        <span class="label">What actually happened</span>
+        <p style="margin:0;">The one lantern I actually got for you didn't fly. It just sort of sat there, defeated, while we stood in the dark laughing about it instead of being upset. Not the magical moment I was going for, but somehow still one of my favourite memories of us.</p>
+      </div>
+      <div class="card">
+        <span class="label">The real one, someday</span>
+        <p style="margin:0;">Somewhere in Thailand or Malaysia there's a lantern festival where hundreds of them actually make it to the sky at once, all together, for about $160 to watch in person. That one's staying on the list until we actually go.</p>
+      </div>
       <p class="lead">You deserve a sky full of them, lit just because you exist, not because you earned it.</p>
     </div>
   </section>
@@ -585,8 +638,9 @@ section.page{
         <p style="margin:0;">That mud pottery session you've been wanting forever &mdash; let's actually book it. Hands in clay, no phones, just us making something lopsided and ours.</p>
       </div>
       <div class="card">
-        <span class="label">Not forgotten</span>
-        <p style="margin:0;">The shiny stone-and-diamond kind of jewellery you love isn't off the table &mdash; it's just waiting on a better season. I haven't stopped wanting to give it to you.</p>
+        <span class="label">I got it wrong once</span>
+        <p style="margin:0;">You'd wanted a tennis bracelet for so long. I got you one &mdash; the wrong one, the wrong design, the wrong colour, because I didn't pay close enough attention. It ruined your birthday, and that's on me, not you.</p>
+        <p style="margin:0;">I will get you the one you actually want, the real one, once I'm back on my feet. And this time I'm not going to make you wait the way I always do. I know how much my "later" has hurt you. I don't want to say it again &mdash; I want to actually follow through.</p>
       </div>
       <div class="card">
         <span class="label">Standing policy</span>
@@ -600,15 +654,24 @@ section.page{
       <div class="eyebrow">one small spark</div>
       <h2 class="big">Go find the thing that still makes you, you.</h2>
       <p class="lead">The girl who chases water droplet lights, tries weird new food, cries happy-tears over period dramas, and makes memories out of nothing &mdash; she's still in there. She's just tired. Let her rest, then let her out again.</p>
-      <button class="heart-btn" id="lightBtn" type="button">light one for yourself</button>
-      <p class="closing-note" id="closingNote" hidden>Lit. That one's yours &mdash; made just because you exist.</p>
+      <div class="hug-wrap" id="hugWrap">
+        <button class="heart-btn" id="lightBtn" type="button">light one for yourself</button>
+        <div class="closing-note" id="closingNote" hidden>
+          <span class="hug-emoji">🫂</span>
+          <div class="reveal-lines" id="revealLines">
+            <span style="animation-delay:0.1s">Lit.</span>
+            <span style="animation-delay:0.9s">That one's yours.</span>
+            <span style="animation-delay:1.7s">Made just because you exist, Leethu.</span>
+            <span style="animation-delay:2.5s">Now come here &mdash; this one's a hug, not a lantern.</span>
+          </div>
+        </div>
+      </div>
       <p class="sig script">love, always &mdash; your scooter driver</p>
     </div>
   </section>
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -623,13 +686,10 @@ section.page{
 
   $("gateYesBtn").addEventListener("click", function(){
     showGate("gateQr");
-    try{
-      new QRCode($("qrCanvas"), {
-        text: "Clue: there's a name only I use for you — spelled L _ _ T H U. You'll need it next.",
-        width: 180, height: 180,
-        colorDark: "#2c1c2e", colorLight: "#ffffff"
-      });
-    }catch(e){ $("qrFallbackText").hidden = false; }
+    var clue = "Clue: there's a name only I use for you - spelled L _ _ T H U. You'll need it next.";
+    var img = $("qrImg");
+    img.onerror = function(){ img.style.display = "none"; $("qrFallbackText").hidden = false; };
+    img.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(clue);
   });
 
   $("gateNoBtn").addEventListener("click", function(){ showGate("gateNoResponse"); });
@@ -784,7 +844,25 @@ section.page{
 
   document.getElementById("lightBtn").addEventListener("click", function(){
     var note = document.getElementById("closingNote");
+    var btn = document.getElementById("lightBtn");
+    var wrap = document.getElementById("hugWrap");
     note.hidden = false;
+    btn.hidden = true;
+
+    if(!reduced){
+      for(var i=0;i<14;i++){
+        var h = document.createElement("span");
+        h.className = "burst-heart";
+        h.textContent = (i % 2 === 0) ? "❤️" : "💗";
+        var angle = (Math.PI * 2 * i) / 14;
+        var dist = 70 + Math.random()*50;
+        h.style.setProperty("--tx", Math.cos(angle)*dist + "px");
+        h.style.setProperty("--ty", Math.sin(angle)*dist + "px");
+        h.style.animationDelay = (Math.random()*0.3) + "s";
+        wrap.appendChild(h);
+        (function(el){ setTimeout(function(){ el.remove(); }, 1600); })(h);
+      }
+    }
   });
 })();
 </script>
