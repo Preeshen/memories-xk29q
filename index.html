@@ -885,48 +885,89 @@ section.page{
 
   function $(id){ return document.getElementById(id); }
 
+  var introBufferPromise = null;
+  function loadIntroBuffer(ctx){
+    if(introBufferPromise) return introBufferPromise;
+    introBufferPromise = fetch("voice.m4a")
+      .then(function(r){ return r.arrayBuffer(); })
+      .then(function(ab){ return ctx.decodeAudioData(ab); });
+    return introBufferPromise;
+  }
+
+  function findTrimRange(buffer){
+    var data = buffer.getChannelData(0);
+    var sr = buffer.sampleRate;
+    var threshold = 0.025;
+    var start = 0, end = data.length - 1;
+    for(var i=0;i<data.length;i++){ if(Math.abs(data[i]) > threshold){ start = i; break; } }
+    for(var j=data.length-1;j>0;j--){ if(Math.abs(data[j]) > threshold){ end = j; break; } }
+    var padStart = Math.max(0, start - sr*0.08);
+    var padEnd = Math.min(data.length-1, end + sr*0.12);
+    return { offset: padStart / sr, duration: (padEnd - padStart) / sr };
+  }
+
+  function makeReverbImpulse(ctx){
+    var len = ctx.sampleRate * 1.1;
+    var impulse = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(var c=0;c<2;c++){
+      var d = impulse.getChannelData(c);
+      for(var i=0;i<len;i++){ d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.2); }
+    }
+    return impulse;
+  }
+
   function speakKoreanIntro(callback){
     var done = false;
     function finish(){ if(!done){ done = true; callback(); } }
 
-    if(!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC){ setTimeout(finish, 900); return; }
+
+    var ctx;
+    try{ ctx = new AC(); }catch(e){ setTimeout(finish, 900); return; }
+    if(ctx.state === "suspended"){ ctx.resume(); }
+
+    loadIntroBuffer(ctx).then(function(buffer){
+      var range = findTrimRange(buffer);
+
+      var source = ctx.createBufferSource();
+      source.buffer = buffer;
+
+      var warmth = ctx.createBiquadFilter();
+      warmth.type = "lowshelf";
+      warmth.frequency.value = 220;
+      warmth.gain.value = 3;
+
+      var soften = ctx.createBiquadFilter();
+      soften.type = "highshelf";
+      soften.frequency.value = 6000;
+      soften.gain.value = -4;
+
+      var dryGain = ctx.createGain();
+      dryGain.gain.value = 0.88;
+      var wetGain = ctx.createGain();
+      wetGain.gain.value = 0.16;
+      var masterGain = ctx.createGain();
+      masterGain.gain.value = 1.0;
+
+      var convolver = ctx.createConvolver();
+      convolver.buffer = makeReverbImpulse(ctx);
+
+      source.connect(warmth);
+      warmth.connect(soften);
+      soften.connect(dryGain);
+      soften.connect(convolver);
+      convolver.connect(wetGain);
+      dryGain.connect(masterGain);
+      wetGain.connect(masterGain);
+      masterGain.connect(ctx.destination);
+
+      source.onended = finish;
+      source.start(0, range.offset, range.duration);
+      setTimeout(finish, (range.duration * 1000) + 1500);
+    }).catch(function(){
       setTimeout(finish, 900);
-      return;
-    }
-
-    function doSpeak(){
-      try{
-        window.speechSynthesis.cancel();
-        var utter = new SpeechSynthesisUtterance("자기야, 준비됐어? 가자. 천천히 읽고 즐겨봐, 베이비.");
-        var voices = window.speechSynthesis.getVoices();
-        var koVoice = null;
-        for(var i=0;i<voices.length;i++){
-          if(voices[i].lang && voices[i].lang.toLowerCase().indexOf("ko") === 0){ koVoice = voices[i]; break; }
-        }
-        if(koVoice) utter.voice = koVoice;
-        utter.lang = "ko-KR";
-        utter.rate = 0.95;
-        utter.onend = finish;
-        utter.onerror = finish;
-        window.speechSynthesis.speak(utter);
-        setTimeout(finish, 7000);
-      }catch(e){ finish(); }
-    }
-
-    try{
-      var existing = window.speechSynthesis.getVoices();
-      if(existing && existing.length){
-        doSpeak();
-      } else {
-        var primed = false;
-        window.speechSynthesis.onvoiceschanged = function(){
-          if(primed) return;
-          primed = true;
-          doSpeak();
-        };
-        setTimeout(function(){ if(!primed){ primed = true; doSpeak(); } }, 350);
-      }
-    }catch(e){ setTimeout(finish, 900); }
+    });
   }
 
   function showGate(id){
