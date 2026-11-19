@@ -1000,6 +1000,7 @@ section.page{
       msg.style.color = "var(--accent)";
       msg.textContent = "that's the one.";
       try{ localStorage.setItem("leethu_unlocked", "1"); }catch(e){}
+      unlockBgmForMobile();
       speakKoreanIntro(function(){
         ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
         var story = $("story");
@@ -1085,6 +1086,25 @@ section.page{
   var bgm = document.getElementById("bgm");
   bgm.volume = 0.5;
   var playing = false;
+
+  function unlockBgmForMobile(){
+    try{
+      var wasMuted = bgm.muted;
+      bgm.muted = true;
+      var p = bgm.play();
+      if(p && p.then){
+        p.then(function(){
+          bgm.pause();
+          bgm.currentTime = 0;
+          bgm.muted = wasMuted;
+        }).catch(function(){ bgm.muted = wasMuted; });
+      } else {
+        bgm.pause();
+        bgm.currentTime = 0;
+        bgm.muted = wasMuted;
+      }
+    }catch(e){}
+  }
   var btn = document.getElementById("soundBtn");
   var dot = document.getElementById("soundDot");
   var label = document.getElementById("soundLabel");
