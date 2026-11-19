@@ -271,6 +271,16 @@ section.page{
   outline:2px solid var(--accent);
   outline-offset:2px;
 }
+.sound-btn.nudge{
+  animation: nudge-pulse 1.6s ease-in-out infinite;
+}
+@keyframes nudge-pulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(255,177,122,0.55); transform:scale(1); }
+  50%{ box-shadow:0 0 0 8px rgba(255,177,122,0); transform:scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce){
+  .sound-btn.nudge{ animation:none; }
+}
 
 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
 .dot.off{background:var(--muted);}
@@ -499,7 +509,7 @@ section.page{
     <div class="qr-card"><img id="qrImg" width="180" height="180" alt="QR code with a clue" style="display:block;"></div>
     <button class="link-btn" id="qrFallbackBtn" type="button">don't have your phone handy? tap here</button>
     <div class="qr-fallback" id="qrFallbackText" hidden>
-      <p style="margin:0;">There's a version of your name that only I use, spelled out letter by letter: L-?-?-T-H-U. You'll need it on the next page.</p>
+      <p style="margin:0;">There's a version of your name that only I use, spelled out letter by letter: L-?-T-H-U. You'll need it on the next page.</p>
     </div>
     <button class="heart-btn" id="qrContinueBtn" type="button">got it, continue</button>
   </div>
@@ -509,7 +519,7 @@ section.page{
   <div class="wrap">
     <div class="eyebrow">the password</div>
     <h2 class="big">Type the name only I use.</h2>
-    <p class="lead">All six letters, one word, no spaces.</p>
+    <p class="lead">All five letters, one word, no spaces.</p>
     <div class="puzzle-input">
       <input type="text" id="puzzleAnswer" autocomplete="off" aria-label="Type the secret nickname" placeholder="your nickname">
       <button class="heart-btn" id="puzzleSubmit" type="button">unlock</button>
@@ -687,7 +697,7 @@ section.page{
 
   $("gateYesBtn").addEventListener("click", function(){
     showGate("gateQr");
-    var clue = "Clue: there's a name only I use for you - spelled L _ _ T H U. You'll need it next.";
+    var clue = "Clue: there's a name only I use for you - spelled L _ T H U. You'll need it next.";
     var img = $("qrImg");
     img.onerror = function(){ img.style.display = "none"; $("qrFallbackText").hidden = false; };
     img.src = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(clue);
@@ -705,10 +715,12 @@ section.page{
   function tryUnlock(){
     var val = ($("puzzleAnswer").value || "").trim().toLowerCase();
     var msg = $("puzzleMsg");
-    if(val === "leethu"){
+    if(val === "lithu"){
       msg.style.color = "var(--accent)";
       msg.textContent = "that's the one.";
       try{ localStorage.setItem("leethu_unlocked", "1"); }catch(e){}
+      startBgm();
+      $("soundBtn").classList.add("nudge");
       setTimeout(function(){
         ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
         var story = $("story");
@@ -737,6 +749,7 @@ section.page{
     if(localStorage.getItem("leethu_unlocked") === "1"){
       ["gateYesNo","gateNoResponse","gateQr","gatePuzzle"].forEach(function(g){ $(g).hidden = true; });
       $("story").hidden = false;
+      $("soundBtn").classList.add("nudge");
     }
   }catch(e){}
 
@@ -795,9 +808,23 @@ section.page{
   var dot = document.getElementById("soundDot");
   var label = document.getElementById("soundLabel");
 
+  function startBgm(){
+    if(playing) return;
+    bgm.play().then(function(){
+      playing = true;
+      btn.setAttribute("aria-pressed", "true");
+      btn.classList.remove("nudge");
+      dot.classList.remove("off");
+      label.textContent = "pause our song";
+    }).catch(function(){
+      // Autoplay refused; the nudge animation keeps pointing at the button.
+    });
+  }
+
   btn.addEventListener("click", function(){
     playing = !playing;
     btn.setAttribute("aria-pressed", String(playing));
+    btn.classList.remove("nudge");
     if(playing){
       bgm.play().catch(function(){});
       dot.classList.remove("off");
